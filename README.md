@@ -1,9 +1,10 @@
-
+<!--
 [![pypi ipygpulogger version](https://img.shields.io/pypi/v/ipygpulogger.svg)](https://pypi.python.org/pypi/ipygpulogger)
 [![Conda ipygpulogger version](https://img.shields.io/conda/v/stason/ipygpulogger.svg)](https://anaconda.org/stason/ipygpulogger)
 [![Anaconda-Server Badge](https://anaconda.org/stason/ipygpulogger/badges/platforms.svg)](https://anaconda.org/stason/ipygpulogger)
 [![ipygpulogger python compatibility](https://img.shields.io/pypi/pyversions/ipygpulogger.svg)](https://pypi.python.org/pypi/ipygpulogger)
 [![ipygpulogger license](https://img.shields.io/pypi/l/ipygpulogger.svg)](https://pypi.python.org/pypi/ipygpulogger)
+-->
 
 # ipygpulogger
 
