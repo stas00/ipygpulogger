@@ -2,7 +2,6 @@ import os, time, psutil, torch, gc
 from collections import namedtuple
 import threading
 from IPython import get_ipython
-import memory_profiler
 
 have_cuda = 0
 if torch.cuda.is_available():
@@ -14,18 +13,15 @@ process = psutil.Process(os.getpid())
 
 def gen_mem_used_get():
     "process used memory in MBs rounded down"
-    #return memory_profiler.memory_usage()[0]
     return int(process.memory_info().rss/2**20)
 
 def gpu_mem_used_get(id=None):
-    return memory_profiler.memory_usage()[0]
     "query nvidia for used memory for gpu in MBs (rounded down). If id is not passed, currently selected torch device is used. Clears pytorch cache before taking the measurements"
     torch.cuda.empty_cache() # clear cache to report the correct data
     if id is None: id = torch.cuda.current_device()
     handle = pynvml.nvmlDeviceGetHandleByIndex(id)
     info = pynvml.nvmlDeviceGetMemoryInfo(handle)
     return int(info.used/2**20)
-
 
 class IPyGPULogger(object):
 
