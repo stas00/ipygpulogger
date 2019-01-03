@@ -37,8 +37,8 @@ class IPyGPULogger(object):
         self.compact = compact       # one line printouts
         self.gc_collect = gc_collect # don't use when tracking leaks
 
-        self.keep_watching   = True
-        self.watching_memory = True
+        self.peak_monitoring = False
+        self.running         = False
 
         self.t1 = time.time() # will be set to current time later
         self.time_delta = 0
@@ -61,10 +61,11 @@ class IPyGPULogger(object):
             'time_delta'],
             )
 
-        # initial measurement
+        # initial measurements
         if gc_collect: gc.collect()
         self.gen_mem_used_prev = gen_mem_used_get()
         self.gpu_mem_used_prev = gpu_mem_used_get()
+
 
     @property
     def data(self):
@@ -74,29 +75,52 @@ class IPyGPULogger(object):
             self.time_delta
         )
 
+
     def start(self):
         """Register memory profiling tools to IPython instance."""
-        self.watching_memory = True
+        self.running = True
+
         self.ipython.events.register("pre_run_cell",  self.pre_run_cell)
-        self.ipython.events.register("post_run_cell", self.watch_memory)
+        self.ipython.events.register("post_run_cell", self.post_run_cell)
+
         return self
+
 
     def stop(self):
         """Unregister memory profiling tools from IPython instance."""
-        self.watching_memory = False
+        if not self.running: return
+
         try: self.ipython.events.unregister("pre_run_cell",  self.pre_run_cell)
         except ValueError: pass
-        try: self.ipython.events.unregister("post_run_cell", self.watch_memory)
+        try: self.ipython.events.unregister("post_run_cell", self.post_run_cell)
         except ValueError: pass
 
-    def watch_memory(self):
-        if not self.watching_memory: return
+        self.running         = False
+        self.peak_monitoring = False
+
+
+    def pre_run_cell(self):
+        if not self.running: return
+
+        self.peak_monitoring = True
+
+        # start a thread that samples RAM usage until the current command finishes
+        ipython_peak_mem_used_thread = threading.Thread(target=self.during_execution_memory_sampler)
+        ipython_peak_mem_used_thread.daemon = True
+        ipython_peak_mem_used_thread.start()
+
+        # Capture current time before we execute the current command
+        self.t1 = time.time()
+
+
+    def post_run_cell(self):
+        if not self.running: return
 
         # calculate time delta using global t1 (from the pre-run
         # event) and current time
         self.time_delta = time.time() - self.t1
 
-        self.keep_watching = False
+        self.peak_monitoring = False
 
         if self.gc_collect: gc.collect()
 
@@ -125,7 +149,6 @@ class IPyGPULogger(object):
     def during_execution_memory_sampler(self):
         self.mem_used_peak = -1
         self.gpu_mem_used_peak = -1
-        self.keep_watching = True
 
         # assuming the gpu is not switched to another one once the logger has
         # started, otherwise it would be measuring the wrong GPU
@@ -147,7 +170,7 @@ class IPyGPULogger(object):
             self.gpu_mem_used_peak = max(gpu_mem_used, self.gpu_mem_used_peak)
 
             time.sleep(WAIT_BETWEEN_SAMPLES_SECS)
-            if not self.keep_watching or n > MAX_ITERATIONS:
+            if not self.peak_monitoring or n > MAX_ITERATIONS:
                 # exit if we've been told our command has finished or if it has
                 # run for more than a sane amount of time (e.g. maybe something
                 # crashed and we don't want this to carry on running)
@@ -155,12 +178,3 @@ class IPyGPULogger(object):
                     print("✘ {} Something weird happened and this ran for too long, this thread is killing itself".format(__file__))
                 break
             n += 1
-
-
-    def pre_run_cell(self):
-        """Capture current time before we execute the current command"""
-        # start a thread that samples RAM usage until the current command finishes
-        ipython_mem_used_thread = threading.Thread(target=self.during_execution_memory_sampler)
-        ipython_mem_used_thread.daemon = True
-        ipython_mem_used_thread.start()
-        self.t1 = time.time()
