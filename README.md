@@ -175,7 +175,7 @@ PRs with improvements and new features and Issues with suggestions are welcome.
 
 ## Credits
 
-This work is inspired and modelled after:
+This work was inspired and modelled after:
 
 * [ipython_memory_usage](https://github.com/ianozsvald/ipython_memory_usage) by Ian Ozsvald
 

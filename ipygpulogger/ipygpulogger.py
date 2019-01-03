@@ -153,7 +153,6 @@ class IPyGPULogger(object):
         gpu_id = torch.cuda.current_device()
         gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
 
-        WAIT_BETWEEN_SAMPLES_SECS = 0.001
         while True:
 
             gen_mem_used = gen_mem_used_get()
@@ -164,6 +163,6 @@ class IPyGPULogger(object):
             gpu_mem_used = gpu_mem_used_get_fast(gpu_handle)
             self.gpu_mem_used_peak = max(gpu_mem_used, self.gpu_mem_used_peak)
 
-            time.sleep(WAIT_BETWEEN_SAMPLES_SECS)
+            time.sleep(0.001) # 1msec
 
             if not self.peak_monitoring: break
