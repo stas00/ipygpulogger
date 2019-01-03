@@ -42,12 +42,12 @@ class IPyGPULogger(object):
     def __init__(self, compact=False, gc_collect=True):
 
         self.compact = compact       # one line printouts
-        self.gc_collect = gc_collect # don't use when tracking leaks
+        self.gc_collect = gc_collect # don't use when tracking mem leaks
 
         self.peak_monitoring = False
         self.running         = False
 
-        self.time_start = time.time() # will be set to current time later
+        self.time_start = 0
         self.time_delta = 0
 
         self.gen_mem_used_peak   = -1
@@ -83,6 +83,9 @@ class IPyGPULogger(object):
         self.ipython.events.register("pre_run_cell",  self.pre_run_cell)
         self.ipython.events.register("post_run_cell", self.post_run_cell)
 
+        # run pre_run_cell() manually, since we are past that event in this cell
+        self.pre_run_cell()
+
         return self
 
 
@@ -109,15 +112,13 @@ class IPyGPULogger(object):
         peak_monitor_thread.daemon = True
         peak_monitor_thread.start()
 
-        # Capture current time before we execute the current command
+        # time before we execute the current cell
         self.time_start = time.time()
 
 
     def post_run_cell(self):
         if not self.running: return
 
-        # calculate time delta using global t1 (from the pre_run_cell event) and
-        # current time
         self.time_delta = time.time() - self.time_start
 
         self.peak_monitoring = False
@@ -125,11 +126,11 @@ class IPyGPULogger(object):
         if self.gc_collect: gc.collect()
 
         gen_mem_used_new = gen_mem_used_get()
-        self.gen_mem_used_delta = gen_mem_used_new - self.gen_mem_used_prev
+        self.gen_mem_used_delta  = gen_mem_used_new - self.gen_mem_used_prev
         self.gen_mem_used_peaked = max(0, self.gen_mem_used_peak - gen_mem_used_new)
 
         gpu_mem_used_new = gpu_mem_used_get()
-        self.gpu_mem_used_delta = gpu_mem_used_new - self.gpu_mem_used_prev
+        self.gpu_mem_used_delta  = gpu_mem_used_new - self.gpu_mem_used_prev
         self.gpu_mem_used_peaked = max(0, self.gpu_mem_used_peak - gpu_mem_used_new)
 
         # not really useful, as the report is right next to the cell
