@@ -147,7 +147,7 @@ class IPyGPULogger(object):
 
 
     def during_execution_memory_sampler(self):
-        self.mem_used_peak = -1
+        self.gen_mem_used_peak = -1
         self.gpu_mem_used_peak = -1
 
         # assuming the gpu is not switched to another one once the logger has
@@ -156,9 +156,7 @@ class IPyGPULogger(object):
         gpu_id = torch.cuda.current_device()
         gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
 
-        n = 0
         WAIT_BETWEEN_SAMPLES_SECS = 0.001
-        MAX_ITERATIONS = 60.0 / WAIT_BETWEEN_SAMPLES_SECS
         while True:
 
             gen_mem_used = gen_mem_used_get()
@@ -170,11 +168,5 @@ class IPyGPULogger(object):
             self.gpu_mem_used_peak = max(gpu_mem_used, self.gpu_mem_used_peak)
 
             time.sleep(WAIT_BETWEEN_SAMPLES_SECS)
-            if not self.peak_monitoring or n > MAX_ITERATIONS:
-                # exit if we've been told our command has finished or if it has
-                # run for more than a sane amount of time (e.g. maybe something
-                # crashed and we don't want this to carry on running)
-                if n > MAX_ITERATIONS:
-                    print("✘ {} Something weird happened and this ran for too long, this thread is killing itself".format(__file__))
-                break
-            n += 1
+
+            if not self.peak_monitoring: break
