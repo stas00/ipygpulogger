@@ -175,9 +175,7 @@ PRs with improvements and new features and Issues with suggestions are welcome.
 
 ## Credits
 
-This work was inspired and modelled after:
-
-* [ipython_memory_usage](https://github.com/ianozsvald/ipython_memory_usage) by Ian Ozsvald
+This module was modelled after:
 
 * [ipython_memwatcher](https://github.com/FrancescAlted/ipython_memwatcher) by Francesc Alted
 
