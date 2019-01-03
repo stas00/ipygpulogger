@@ -150,9 +150,6 @@ class IPyGPULogger(object):
         self.gen_mem_used_peak = -1
         self.gpu_mem_used_peak = -1
 
-        # assuming the gpu is not switched to another one once the logger has
-        # started, otherwise it would be measuring the wrong GPU
-        # probably could provide an API to update the gpu id mid-way
         gpu_id = torch.cuda.current_device()
         gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
 
