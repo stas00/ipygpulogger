@@ -30,6 +30,13 @@ def gpu_mem_used_get_fast(gpu_handle):
     info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
     return int(info.used/2**20)
 
+IPyGPULoggerData = namedtuple(
+    'Data',
+    ['gen_mem_used_delta', 'gen_mem_peaked', 'gen_mem_used',
+     'gpu_mem_used_delta', 'gpu_mem_peaked', 'gpu_mem_used',
+     'time_delta'],
+)
+
 class IPyGPULogger(object):
 
     def __init__(self, compact=False, gc_collect=True):
@@ -54,13 +61,6 @@ class IPyGPULogger(object):
         self.ipython = get_ipython()
         self.input_cells = self.ipython.user_ns['In']
 
-        self._data = namedtuple(
-            'Data',
-            ['gen_mem_used_delta', 'gen_mem_peaked', 'gen_mem_used',
-             'gpu_mem_used_delta', 'gpu_mem_peaked', 'gpu_mem_used',
-            'time_delta'],
-            )
-
         # initial measurements
         if gc_collect: gc.collect()
         self.gen_mem_used_prev = gen_mem_used_get()
@@ -69,7 +69,7 @@ class IPyGPULogger(object):
 
     @property
     def data(self):
-        return self._data(
+        return IPyGPULoggerData(
             self.gen_mem_used_delta, self.gen_mem_used_peaked, self.gen_mem_used_prev,
             self.gpu_mem_used_delta, self.gpu_mem_used_peaked, self.gpu_mem_used_prev,
             self.time_delta
