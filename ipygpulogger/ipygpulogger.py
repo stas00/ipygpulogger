@@ -47,7 +47,7 @@ class IPyGPULogger(object):
         self.peak_monitoring = False
         self.running         = False
 
-        self.t1 = time.time() # will be set to current time later
+        self.time_start = time.time() # will be set to current time later
         self.time_delta = 0
 
         self.gen_mem_used_peak   = -1
@@ -105,20 +105,20 @@ class IPyGPULogger(object):
         self.peak_monitoring = True
 
         # start a thread that samples RAM usage until the current command finishes
-        ipython_peak_mem_used_thread = threading.Thread(target=self.during_execution_memory_sampler)
-        ipython_peak_mem_used_thread.daemon = True
-        ipython_peak_mem_used_thread.start()
+        peak_monitor_thread = threading.Thread(target=self.during_execution_memory_sampler)
+        peak_monitor_thread.daemon = True
+        peak_monitor_thread.start()
 
         # Capture current time before we execute the current command
-        self.t1 = time.time()
+        self.time_start = time.time()
 
 
     def post_run_cell(self):
         if not self.running: return
 
-        # calculate time delta using global t1 (from the pre-run
-        # event) and current time
-        self.time_delta = time.time() - self.t1
+        # calculate time delta using global t1 (from the pre_run_cell event) and
+        # current time
+        self.time_delta = time.time() - self.time_start
 
         self.peak_monitoring = False
 
