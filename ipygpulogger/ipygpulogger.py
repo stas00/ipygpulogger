@@ -15,12 +15,19 @@ def gen_mem_used_get():
     "process used memory in MBs rounded down"
     return int(process.memory_info().rss/2**20)
 
-def gpu_mem_used_get(id=None):
+def gpu_mem_used_get():
     "query nvidia for used memory for gpu in MBs (rounded down). If id is not passed, currently selected torch device is used. Clears pytorch cache before taking the measurements"
     torch.cuda.empty_cache() # clear cache to report the correct data
-    if id is None: id = torch.cuda.current_device()
+    id = torch.cuda.current_device()
     handle = pynvml.nvmlDeviceGetHandleByIndex(id)
     info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+    return int(info.used/2**20)
+
+# similar to gpu_mem_used_get, but doesn't do any checks, clearing caches,
+# gc.collect, etc., to be lightening fast when run in a tight loop from a peak
+# memory measurement thread.
+def gpu_mem_used_get_fast(gpu_handle):
+    info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
     return int(info.used/2**20)
 
 class IPyGPULogger(object):
@@ -119,6 +126,12 @@ class IPyGPULogger(object):
         self.gpu_mem_used_peak = -1
         self.keep_watching = True
 
+        # assuming the gpu is not switched to another one once the logger has
+        # started, otherwise it would be measuring the wrong GPU
+        # probably could provide an API to update the gpu id mid-way
+        gpu_id = torch.cuda.current_device()
+        gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
+
         n = 0
         WAIT_BETWEEN_SAMPLES_SECS = 0.001
         MAX_ITERATIONS = 60.0 / WAIT_BETWEEN_SAMPLES_SECS
@@ -127,8 +140,9 @@ class IPyGPULogger(object):
             gen_mem_used = gen_mem_used_get()
             self.gen_mem_used_peak = max(gen_mem_used, self.gen_mem_used_peak)
 
-            # no gc.collect here, since it has to be fast and we want to measure only the peak
-            gpu_mem_used = gpu_mem_used_get()
+            # no gc.collect, empty_cache here, since it has to be fast and we
+            # want to measure only the peak memory usage
+            gpu_mem_used = gpu_mem_used_get_fast(gpu_id, gpu_handle)
             self.gpu_mem_used_peak = max(gpu_mem_used, self.gpu_mem_used_peak)
 
             time.sleep(WAIT_BETWEEN_SAMPLES_SECS)
