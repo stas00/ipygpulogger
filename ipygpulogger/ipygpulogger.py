@@ -132,15 +132,15 @@ class IPyGPULogger(object):
         self.gpu_mem_used_delta = gpu_mem_used_new - self.gpu_mem_used_prev
         self.gpu_mem_used_peaked = max(0, self.gpu_mem_used_peak - gpu_mem_used_new)
 
-        num_commands = len(self.input_cells) - 1
-        cmd = "In [{}]".format(num_commands)
+        # not really useful, as the report is right next to the cell
+        # cell_num = len(self.input_cells) - 1
 
         if (self.compact):
-            print(f"Gen: {self.gen_mem_used_delta:0.0f}/{self.gen_mem_used_peaked:0.0f}/{gen_mem_used_new:0.0f} MB | GPU: {self.gpu_mem_used_delta:0.0f}/{self.gpu_mem_used_peaked:0.0f}/{gpu_mem_used_new:0.0f} MB | {self.time_delta:0.3f}s | {cmd} (Consumed/Peaked/Used Total)")
+            print(f"Gen: {self.gen_mem_used_delta:0.0f}/{self.gen_mem_used_peaked:0.0f}/{gen_mem_used_new:0.0f} MB | GPU: {self.gpu_mem_used_delta:0.0f}/{self.gpu_mem_used_peaked:0.0f}/{gpu_mem_used_new:0.0f} MB | Time {self.time_delta:0.3f}s | (Consumed/Peaked/Used Total)")
         else:
-            print(f"RAM: Consumed Peaked  Used Total in {self.time_delta:0.3f}s ({cmd})")
-            print(f"Gen:    {self.gen_mem_used_delta:5.0f}  {self.gen_mem_used_peaked:5.0f}    {gen_mem_used_new:5.0f} MB")
-            print(f"GPU:    {self.gpu_mem_used_delta:5.0f}  {self.gpu_mem_used_peaked:5.0f}    {gpu_mem_used_new:5.0f} MB")
+            print(f"RAM: Consumed Peaked  Used Total | Exec time {self.time_delta:0.3f}s")
+            print(f"Gen:    {self.gen_mem_used_delta:5.0f}  {self.gen_mem_used_peaked:5.0f}    {gen_mem_used_new:5.0f} MB |")
+            print(f"GPU:    {self.gpu_mem_used_delta:5.0f}  {self.gpu_mem_used_peaked:5.0f}    {gpu_mem_used_new:5.0f} MB |")
 
         self.gen_mem_used_prev = gen_mem_used_new
         self.gpu_mem_used_prev = gpu_mem_used_new
