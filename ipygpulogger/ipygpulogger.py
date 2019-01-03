@@ -104,8 +104,8 @@ class IPyGPULogger(object):
 
         self.peak_monitoring = True
 
-        # start a thread that samples RAM usage until the current command finishes
-        peak_monitor_thread = threading.Thread(target=self.during_execution_memory_sampler)
+        # this thread samples RAM usage as long as the current cell is running
+        peak_monitor_thread = threading.Thread(target=self.peak_monitor_func)
         peak_monitor_thread.daemon = True
         peak_monitor_thread.start()
 
@@ -146,7 +146,7 @@ class IPyGPULogger(object):
         self.gpu_mem_used_prev = gpu_mem_used_new
 
 
-    def during_execution_memory_sampler(self):
+    def peak_monitor_func(self):
         self.gen_mem_used_peak = -1
         self.gpu_mem_used_peak = -1
 
