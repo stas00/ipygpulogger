@@ -121,7 +121,6 @@ class IPyGPULogger(object):
 
 
     def during_execution_memory_sampler(self):
-        import time
         self.mem_used_peak = -1
         self.gpu_mem_used_peak = -1
         self.keep_watching = True
@@ -142,15 +141,14 @@ class IPyGPULogger(object):
 
             # no gc.collect, empty_cache here, since it has to be fast and we
             # want to measure only the peak memory usage
-            gpu_mem_used = gpu_mem_used_get_fast(gpu_id, gpu_handle)
+            gpu_mem_used = gpu_mem_used_get_fast(gpu_handle)
             self.gpu_mem_used_peak = max(gpu_mem_used, self.gpu_mem_used_peak)
 
             time.sleep(WAIT_BETWEEN_SAMPLES_SECS)
             if not self.keep_watching or n > MAX_ITERATIONS:
-                # exit if we've been told our command has finished or
-                # if it has run for more than a sane amount of time
-                # (e.g. maybe something crashed and we don't want this
-                # to carry on running)
+                # exit if we've been told our command has finished or if it has
+                # run for more than a sane amount of time (e.g. maybe something
+                # crashed and we don't want this to carry on running)
                 if n > MAX_ITERATIONS:
                     print("✘ {} Something weird happened and this ran for too long, this thread is killing itself".format(__file__))
                 break
@@ -159,10 +157,8 @@ class IPyGPULogger(object):
 
     def pre_run_cell(self):
         """Capture current time before we execute the current command"""
-        # start a thread that samples RAM usage until the current
-        # command finishes
-        ipython_mem_used_thread = threading.Thread(
-            target=self.during_execution_memory_sampler)
+        # start a thread that samples RAM usage until the current command finishes
+        ipython_mem_used_thread = threading.Thread(target=self.during_execution_memory_sampler)
         ipython_mem_used_thread.daemon = True
         ipython_mem_used_thread.start()
         self.t1 = time.time()
