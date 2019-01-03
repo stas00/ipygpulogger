@@ -53,18 +53,15 @@ class IPyGPULogger(object):
         self.gen_mem_used_peak   = -1
         self.gen_mem_used_peaked = -1
         self.gen_mem_used_delta  =  0
+        self.gen_mem_used_prev   = -1
 
         self.gpu_mem_used_peak   = -1
         self.gpu_mem_used_peaked = -1
         self.gpu_mem_used_delta  =  0
+        self.gpu_mem_used_prev   = -1
 
         self.ipython = get_ipython()
         self.input_cells = self.ipython.user_ns['In']
-
-        # initial measurements
-        if gc_collect: gc.collect()
-        self.gen_mem_used_prev = gen_mem_used_get()
-        self.gpu_mem_used_prev = gpu_mem_used_get()
 
 
     @property
@@ -79,6 +76,11 @@ class IPyGPULogger(object):
     def start(self):
         """Register memory profiling tools to IPython instance."""
         self.running = True
+
+        # initial measurements
+        if self.gc_collect: gc.collect()
+        self.gen_mem_used_prev = gen_mem_used_get()
+        self.gpu_mem_used_prev = gpu_mem_used_get()
 
         self.ipython.events.register("pre_run_cell",  self.pre_run_cell)
         self.ipython.events.register("post_run_cell", self.post_run_cell)
