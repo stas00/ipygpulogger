@@ -32,6 +32,8 @@ Gen:       45      0    170 MB
 GPU:     2467      0   1465 MB
 ```
 
+![Usage demo](docs/images/usage1.png)
+
 ## Installation
 
 * dev:
@@ -58,7 +60,7 @@ will be available shortly
 
 ## Requirements
 
-Python 3.6+, and the rest of dependencies are automatically installed via pip/conda.
+Python 3.6+, and the rest of dependencies are automatically installed via pip (and soon conda).
 
 
 
