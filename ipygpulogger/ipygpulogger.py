@@ -34,35 +34,37 @@ class IPyGPULogger(object):
 
     def __init__(self, compact=False, gc_collect=True):
 
-        self.compact = compact # one line printouts
+        self.compact = compact       # one line printouts
         self.gc_collect = gc_collect # don't use when tracking leaks
 
-        # last measurement
-        if gc_collect: gc.collect()
-        self.gen_mem_used_prev = gen_mem_used_get()
-        self.gpu_mem_used_prev = gpu_mem_used_get()
+        self.keep_watching   = True
+        self.watching_memory = True
 
         self.t1 = time.time() # will be set to current time later
-        self.keep_watching = True
-
-        self.gen_mem_used_peak = -1
-        self.gen_mem_used_peaked = -1
-        self.gen_mem_used_delta = 0
-
-        self.gpu_mem_used_peak = -1
-        self.gpu_mem_used_peaked = -1
-        self.gpu_mem_used_delta = 0
-
         self.time_delta = 0
-        self.watching_memory = True
+
+        self.gen_mem_used_peak   = -1
+        self.gen_mem_used_peaked = -1
+        self.gen_mem_used_delta  =  0
+
+        self.gpu_mem_used_peak   = -1
+        self.gpu_mem_used_peaked = -1
+        self.gpu_mem_used_delta  =  0
+
         self.ipython = get_ipython()
         self.input_cells = self.ipython.user_ns['In']
+
         self._data = namedtuple(
             'Data',
             ['gen_mem_used_delta', 'gen_mem_peaked', 'gen_mem_used',
              'gpu_mem_used_delta', 'gpu_mem_peaked', 'gpu_mem_used',
             'time_delta'],
             )
+
+        # initial measurement
+        if gc_collect: gc.collect()
+        self.gen_mem_used_prev = gen_mem_used_get()
+        self.gpu_mem_used_prev = gpu_mem_used_get()
 
     @property
     def data(self):
@@ -75,16 +77,16 @@ class IPyGPULogger(object):
     def start(self):
         """Register memory profiling tools to IPython instance."""
         self.watching_memory = True
+        self.ipython.events.register("pre_run_cell",  self.pre_run_cell)
         self.ipython.events.register("post_run_cell", self.watch_memory)
-        self.ipython.events.register("pre_run_cell", self.pre_run_cell)
         return self
 
     def stop(self):
         """Unregister memory profiling tools from IPython instance."""
         self.watching_memory = False
-        try:  self.ipython.events.unregister("post_run_cell", self.watch_memory)
+        try: self.ipython.events.unregister("pre_run_cell",  self.pre_run_cell)
         except ValueError: pass
-        try: self.ipython.events.unregister("pre_run_cell", self.pre_run_cell)
+        try: self.ipython.events.unregister("post_run_cell", self.watch_memory)
         except ValueError: pass
 
     def watch_memory(self):
