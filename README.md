@@ -157,7 +157,7 @@ But `IPyGPULogger` does all this for you, for example, preloading `pytorch` `cud
 
 Before a snapshot of used GPU RAM is made, its cache is cleared, since otherwise there is no way to get any real GPU RAM usage. So this module gives very reliable data on GPU RAM (but also see [Temporary Memory Leaks](#temporary-memory-leaks).
 
-On the other hand, cache clearing for the python process (general RAM) is not possible, so if your code consumed some code, then released it and consumed again - there is no way of telling the true size of consumed RAM. So the general RAM reporting is highly unreliable because of that. As long as the programs grows in its memory usage the numbers will be correct. As soon as some cached memory will be reused, it's impossible to tell how much memory was consumed. In this situation you need to explore various memory profilers, like [memory_profiler](https://pypi.org/project/memory-profiler/).
+For general RAM accounting, [tracemalloc](https://docs.python.org/3/library/tracemalloc.html) is used, which gives a correct report of how much RAM was allocated and peaked, which overcomes the interference of python internal caching. So if the code makes a large memory allocation, followed by its release and immediately a smaller allocation - the process's total memory usage won't change, yet it'll report how much RAM a specific cell has allocated.
 
 ## Temporary Memory Leaks
 

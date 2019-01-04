@@ -1,15 +1,16 @@
-import os, time, psutil, torch, gc
+import time, psutil, gc, tracemalloc
 from collections import namedtuple
 import threading
 from IPython import get_ipython
 
 have_cuda = 0
+import torch
 if torch.cuda.is_available():
     have_cuda = 1
     import pynvml
     pynvml.nvmlInit()
 
-process = psutil.Process(os.getpid())
+process = psutil.Process()
 
 def gen_mem_used_get():
     "process used memory in MBs rounded down"
@@ -109,6 +110,9 @@ class IPyGPULogger(object):
 
         self.peak_monitoring = True
 
+        # start RAM tracing
+        tracemalloc.start()
+
         # this thread samples RAM usage as long as the current cell is running
         peak_monitor_thread = threading.Thread(target=self.peak_monitor_func)
         peak_monitor_thread.daemon = True
@@ -128,8 +132,10 @@ class IPyGPULogger(object):
         if self.gc_collect: gc.collect()
 
         gen_mem_used_new = gen_mem_used_get()
-        self.gen_mem_used_delta  = gen_mem_used_new - self.gen_mem_used_prev
-        self.gen_mem_used_peaked = max(0, self.gen_mem_used_peak - gen_mem_used_new)
+        delta, peak = list(map(lambda x: x/2**20, tracemalloc.get_traced_memory()))
+        tracemalloc.stop() # reset
+        self.gen_mem_used_delta  = delta
+        self.gen_mem_used_peaked = max(0, peak - delta)
 
         gpu_mem_used_new = gpu_mem_used_get()
         self.gpu_mem_used_delta  = gpu_mem_used_new - self.gpu_mem_used_prev
@@ -158,8 +164,9 @@ class IPyGPULogger(object):
 
         while True:
 
-            gen_mem_used = gen_mem_used_get()
-            self.gen_mem_used_peak = max(gen_mem_used, self.gen_mem_used_peak)
+            # using tracemalloc for tracing peak memory instead
+            #gen_mem_used = gen_mem_used_get()
+            #self.gen_mem_used_peak = max(gen_mem_used, self.gen_mem_used_peak)
 
             # no gc.collect, empty_cache here, since it has to be fast and we
             # want to measure only the peak memory usage
