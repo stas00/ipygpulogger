@@ -180,6 +180,11 @@ This module was modelled after:
 * [ipython_memwatcher](https://github.com/FrancescAlted/ipython_memwatcher) by Francesc Alted
 
 
+## See Also
+
+- [ipyexperiments](https://github.com/stas00/ipyexperiments) - jupyter/ipython experiment containers for GPU and general RAM re-use. This sister module's main purpose is to help calibrate hyper parameters in deep learning notebooks to fit the available GPU and general RAM, but, of course, it can be useful for any other use where memory limits is a constant issue. It is also useful for detecting memory leaks in your code.
+
+
 ## History
 
 A detailed history of changes can be found [here](https://github.com/stas00/ipygpulogger/blob/master/CHANGES.md).
