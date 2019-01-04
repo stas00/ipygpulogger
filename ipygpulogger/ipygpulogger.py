@@ -12,6 +12,9 @@ if torch.cuda.is_available():
 
 process = psutil.Process()
 
+def preload_pytorch():
+    if have_cuda: torch.ones((1, 1)).cuda()
+
 def gen_mem_used_get():
     "process used memory in MBs rounded down"
     return int(process.memory_info().rss/2**20)
@@ -77,6 +80,8 @@ class IPyGPULogger(object):
     def start(self):
         """Register memory profiling tools to IPython instance."""
         self.running = True
+
+        preload_pytorch()
 
         # initial measurements
         if self.gc_collect: gc.collect()
