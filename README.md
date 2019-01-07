@@ -32,7 +32,7 @@ Gen:       45      0    170 MB
 GPU:     2467      0   1465 MB
 ```
 
-![Usage demo](docs/images/usage1.png)
+![Usage demo](https://raw.githubusercontent.com/stas00/ipygpulogger/master/docs/images/usage1.png)
 
 ## Installation
 
@@ -171,6 +171,18 @@ So, make sure you compare your total GPU RAM consumption with and without `gc_co
 ## Contributing
 
 PRs with improvements and new features and Issues with suggestions are welcome.
+
+
+## Testing
+
+1. Install my fork of `pytest-ipynb` (the original one is no longer being maintained)
+   ```
+   pip install git+https://github.com/stas00/pytest-ipynb.git
+   ```
+2. Run the test suite
+   ```
+   make test
+   ```
 
 
 ## Credits
