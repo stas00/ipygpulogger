@@ -28,7 +28,7 @@ IPyGPULogger().start()
 Then running a jupyter cell with some code, you get a report printed:
 ```
 RAM: Consumed Peaked  Used Total  in 0.000s (In [4])
-Gen:       45      0    170 MB
+CPU:       45      0    170 MB
 GPU:     2467      0   1465 MB
 ```
 
@@ -110,7 +110,7 @@ from ipygpulogger import IPyGPULogger
    ```
 
    ```
-   Data(gen_mem_used_delta=0, gen_mem_peaked=0, gen_mem_used=2161, gpu_mem_used_delta=0, gpu_mem_peaked=0, gpu_mem_used=1962, time_delta=0.0048329830169677734)
+   Data(cpu_mem_used_delta=0, cpu_mem_peaked=0, cpu_mem_used=2161, gpu_mem_used_delta=0, gpu_mem_peaked=0, gpu_mem_used=1962, time_delta=0.0048329830169677734)
    ```
    This accessor returns a `namedtuple`, so that you can access its fields by name,  example:
 
@@ -119,7 +119,7 @@ from ipygpulogger import IPyGPULogger
    ```
    or to unpack it:
    ```python
-   gen_mem_used_delta, gen_mem_peaked, gen_mem_used, gpu_mem_used_delta, gpu_mem_peaked, gpu_mem_used, time_delta = il.data
+   cpu_mem_used_delta, cpu_mem_peaked, cpu_mem_used, gpu_mem_used_delta, gpu_mem_peaked, gpu_mem_used, time_delta = il.data
    ```
 
 
@@ -135,7 +135,7 @@ For example if the report was:
 
 ```
 RAM: Consumed Peaked  Used Total in 0.000s (In [4])
-Gen:        0      0    170 MB
+CPU:        0      0    170 MB
 GPU:     2567   1437   5465 MB
 ```
 
