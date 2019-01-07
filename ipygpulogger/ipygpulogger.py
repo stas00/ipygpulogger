@@ -35,7 +35,7 @@ def gpu_mem_used_get_fast(gpu_handle):
     return int(info.used/2**20)
 
 IPyGPULoggerData = namedtuple(
-    'Data',
+    'IPyGPULoggerData',
     ['gen_mem_used_delta', 'gen_mem_peaked', 'gen_mem_used',
      'gpu_mem_used_delta', 'gpu_mem_peaked', 'gpu_mem_used',
      'time_delta'],
@@ -67,7 +67,6 @@ class IPyGPULogger(object):
         self.ipython = get_ipython()
         self.input_cells = self.ipython.user_ns['In']
 
-
     @property
     def data(self):
         return IPyGPULoggerData(
@@ -75,7 +74,6 @@ class IPyGPULogger(object):
             self.gpu_mem_used_delta, self.gpu_mem_used_peaked, self.gpu_mem_used_prev,
             self.time_delta
         )
-
 
     def start(self):
         """Register memory profiling tools to IPython instance."""
@@ -136,28 +134,33 @@ class IPyGPULogger(object):
 
         if self.gc_collect: gc.collect()
 
-        gen_mem_used_new = gen_mem_used_get()
-        delta, peak = list(map(lambda x: x/2**20, tracemalloc.get_traced_memory()))
-        tracemalloc.stop() # reset
-        self.gen_mem_used_delta  = delta
-        self.gen_mem_used_peaked = max(0, peak - delta)
+        # instead of needing a monitoring thread, tracemalloc does the job of
+        # getting ewnly used and peaked memory automatically, since it tracks
+        # all malloc/free calls.
+        gen_mem_used_delta, gen_mem_used_peak = list(map(lambda x: x/2**20, tracemalloc.get_traced_memory()))
+        tracemalloc.stop() # reset accounting
 
-        gpu_mem_used_new = gpu_mem_used_get()
-        self.gpu_mem_used_delta  = gpu_mem_used_new - self.gpu_mem_used_prev
-        self.gpu_mem_used_peaked = max(0, self.gpu_mem_used_peak - gpu_mem_used_new)
+        self.gen_mem_used_new    = gen_mem_used_get()
+        self.gen_mem_used_delta  = gen_mem_used_delta
+        self.gen_mem_used_peaked = max(0, gen_mem_used_peak - gen_mem_used_delta)
+
+        self.gpu_mem_used_new    = gpu_mem_used_get()
+        self.gpu_mem_used_delta  = self.gpu_mem_used_new - self.gpu_mem_used_prev
+        self.gpu_mem_used_peaked = max(0, self.gpu_mem_used_peak - self.gpu_mem_used_new)
 
         # not really useful, as the report is right next to the cell
         # cell_num = len(self.input_cells) - 1
 
         if (self.compact):
-            print(f"Gen: {self.gen_mem_used_delta:0.0f}/{self.gen_mem_used_peaked:0.0f}/{gen_mem_used_new:0.0f} MB | GPU: {self.gpu_mem_used_delta:0.0f}/{self.gpu_mem_used_peaked:0.0f}/{gpu_mem_used_new:0.0f} MB | Time {self.time_delta:0.3f}s | (Consumed/Peaked/Used Total)")
+            print(f"Gen: {self.gen_mem_used_delta:0.0f}/{self.gen_mem_used_peaked:0.0f}/{self.gen_mem_used_new:0.0f} MB | GPU: {self.gpu_mem_used_delta:0.0f}/{self.gpu_mem_used_peaked:0.0f}/{self.gpu_mem_used_new:0.0f} MB | Time {self.time_delta:0.3f}s | (Consumed/Peaked/Used Total)")
         else:
             print(f"RAM: Consumed Peaked  Used Total | Exec time {self.time_delta:0.3f}s")
-            print(f"Gen:    {self.gen_mem_used_delta:5.0f}  {self.gen_mem_used_peaked:5.0f}    {gen_mem_used_new:5.0f} MB |")
-            print(f"GPU:    {self.gpu_mem_used_delta:5.0f}  {self.gpu_mem_used_peaked:5.0f}    {gpu_mem_used_new:5.0f} MB |")
+            print(f"Gen:    {self.gen_mem_used_delta:5.0f}  {self.gen_mem_used_peaked:5.0f}    {self.gen_mem_used_new:5.0f} MB |")
+            print(f"GPU:    {self.gpu_mem_used_delta:5.0f}  {self.gpu_mem_used_peaked:5.0f}    {self.gpu_mem_used_new:5.0f} MB |")
 
-        self.gen_mem_used_prev = gen_mem_used_new
-        self.gpu_mem_used_prev = gpu_mem_used_new
+        # for self.data accessor
+        self.gen_mem_used_prev = self.gen_mem_used_new
+        self.gpu_mem_used_prev = self.gpu_mem_used_new
 
 
     def peak_monitor_func(self):
