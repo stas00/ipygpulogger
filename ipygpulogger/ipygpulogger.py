@@ -12,6 +12,8 @@ if torch.cuda.is_available():
 
 process = psutil.Process()
 
+IPyGPULoggerMemory = namedtuple('IPyGPULoggerMemory', ['consumed', 'reclaimed', 'available'])
+
 def preload_pytorch():
     if have_cuda: torch.ones((1, 1)).cuda()
 
@@ -34,12 +36,8 @@ def gpu_mem_used_get_fast(gpu_handle):
     info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
     return int(info.used/2**20)
 
-IPyGPULoggerData = namedtuple(
-    'IPyGPULoggerData',
-    ['cpu_mem_used_delta', 'cpu_mem_peaked', 'cpu_mem_used',
-     'gpu_mem_used_delta', 'gpu_mem_peaked', 'gpu_mem_used',
-     'time_delta'],
-)
+IPyGPULoggerMemory = namedtuple('IPyGPULoggerMemory', ['used_delta', 'peaked_delta', 'used_total'])
+IPyGPULoggerTime = namedtuple('IPyGPULoggerTime', ['time_delta'])
 
 class IPyGPULogger(object):
 
@@ -54,25 +52,24 @@ class IPyGPULogger(object):
         self.time_start = 0
         self.time_delta = 0
 
-        self.cpu_mem_used_peak   = -1
-        self.cpu_mem_used_peaked = -1
-        self.cpu_mem_used_delta  =  0
-        self.cpu_mem_used_prev   = -1
+        self.cpu_mem_used_peak    = -1
+        self.cpu_mem_used_delta   =  0
+        self.cpu_mem_used_prev    = -1
+        self.cpu_mem_peaked_delta = -1
 
-        self.gpu_mem_used_peak   = -1
-        self.gpu_mem_used_peaked = -1
-        self.gpu_mem_used_delta  =  0
-        self.gpu_mem_used_prev   = -1
+        self.gpu_mem_used_peak    = -1
+        self.gpu_mem_used_delta   =  0
+        self.gpu_mem_used_prev    = -1
+        self.gpu_mem_peaked_delta = -1
 
         self.ipython = get_ipython()
         self.input_cells = self.ipython.user_ns['In']
 
     @property
     def data(self):
-        return IPyGPULoggerData(
-            self.cpu_mem_used_delta, self.cpu_mem_used_peaked, self.cpu_mem_used_prev,
-            self.gpu_mem_used_delta, self.gpu_mem_used_peaked, self.gpu_mem_used_prev,
-            self.time_delta
+        return (IPyGPULoggerMemory(self.cpu_mem_used_delta, self.cpu_mem_peaked_delta, self.cpu_mem_used_prev),
+                IPyGPULoggerMemory(self.gpu_mem_used_delta, self.gpu_mem_peaked_delta, self.gpu_mem_used_prev),
+                IPyGPULoggerTime(self.time_delta)
         )
 
     def start(self):
@@ -134,29 +131,30 @@ class IPyGPULogger(object):
 
         if self.gc_collect: gc.collect()
 
-        # instead of needing a monitoring thread, tracemalloc does the job of
-        # getting ewnly used and peaked memory automatically, since it tracks
-        # all malloc/free calls.
+        # instead of needing a peak memory monitoring thread, tracemalloc does
+        # the job of getting newly used and peaked memory automatically, since
+        # it tracks all malloc/free calls.
         cpu_mem_used_delta, cpu_mem_used_peak = list(map(lambda x: x/2**20, tracemalloc.get_traced_memory()))
         tracemalloc.stop() # reset accounting
 
-        self.cpu_mem_used_new    = cpu_mem_used_get()
-        self.cpu_mem_used_delta  = cpu_mem_used_delta
-        self.cpu_mem_used_peaked = max(0, cpu_mem_used_peak - cpu_mem_used_delta)
+        self.cpu_mem_used_new     = cpu_mem_used_get()
+        self.cpu_mem_used_delta   = cpu_mem_used_delta
+        self.cpu_mem_peaked_delta = max(0, cpu_mem_used_peak - cpu_mem_used_delta)
 
-        self.gpu_mem_used_new    = gpu_mem_used_get()
-        self.gpu_mem_used_delta  = self.gpu_mem_used_new - self.gpu_mem_used_prev
-        self.gpu_mem_used_peaked = max(0, self.gpu_mem_used_peak - self.gpu_mem_used_new)
+        self.gpu_mem_used_new     = gpu_mem_used_get()
+        self.gpu_mem_used_delta   = self.gpu_mem_used_new - self.gpu_mem_used_prev
+        self.gpu_mem_peaked_delta = max(0, self.gpu_mem_used_peak - self.gpu_mem_used_new)
 
-        # not really useful, as the report is right next to the cell
+        # not really useful, as the report is right next to the cell, the cell
+        # counts aren't fixed, if re-run
         # cell_num = len(self.input_cells) - 1
 
         if (self.compact):
-            print(f"CPU: {self.cpu_mem_used_delta:0.0f}/{self.cpu_mem_used_peaked:0.0f}/{self.cpu_mem_used_new:0.0f} MB | GPU: {self.gpu_mem_used_delta:0.0f}/{self.gpu_mem_used_peaked:0.0f}/{self.gpu_mem_used_new:0.0f} MB | Time {self.time_delta:0.3f}s | (Consumed/Peaked/Used Total)")
+            print(f"CPU: {self.cpu_mem_used_delta:0.0f}/{self.cpu_mem_peaked_delta:0.0f}/{self.cpu_mem_used_new:0.0f} MB | GPU: {self.gpu_mem_used_delta:0.0f}/{self.gpu_mem_peaked_delta:0.0f}/{self.gpu_mem_used_new:0.0f} MB | Time {self.time_delta:0.3f}s | (Consumed/Peaked/Used Total)")
         else:
             print(f"RAM: Consumed Peaked  Used Total | Exec time {self.time_delta:0.3f}s")
-            print(f"CPU:    {self.cpu_mem_used_delta:5.0f}  {self.cpu_mem_used_peaked:5.0f}    {self.cpu_mem_used_new:5.0f} MB |")
-            print(f"GPU:    {self.gpu_mem_used_delta:5.0f}  {self.gpu_mem_used_peaked:5.0f}    {self.gpu_mem_used_new:5.0f} MB |")
+            print(f"CPU:    {self.cpu_mem_used_delta:5.0f}  {self.cpu_mem_peaked_delta:5.0f}    {self.cpu_mem_used_new:5.0f} MB |")
+            print(f"GPU:    {self.gpu_mem_used_delta:5.0f}  {self.gpu_mem_peaked_delta:5.0f}    {self.gpu_mem_used_new:5.0f} MB |")
 
         # for self.data accessor
         self.cpu_mem_used_prev = self.cpu_mem_used_new
@@ -172,7 +170,7 @@ class IPyGPULogger(object):
 
         while True:
 
-            # using tracemalloc for tracing peak memory instead
+            # using tracemalloc for tracing peak cpu RAM instead
             #cpu_mem_used = cpu_mem_used_get()
             #self.cpu_mem_used_peak = max(cpu_mem_used, self.cpu_mem_used_peak)
 

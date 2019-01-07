@@ -103,26 +103,32 @@ from ipygpulogger import IPyGPULogger
    il.stop()
    ```
 
-4. Access the measured data directly
+4. Access the measured data directly (in not rounded MBs)
    ```python
-   data = il.data
-   print(data)
-   ```
+   cpu_mem, gpu_mem, time_data = il.data
+   print(cpu_mem)
+   print(gpu_mem)
+   print(time_data)
 
    ```
-   Data(cpu_mem_used_delta=0, cpu_mem_peaked=0, cpu_mem_used=2161, gpu_mem_used_delta=0, gpu_mem_peaked=0, gpu_mem_used=1962, time_delta=0.0048329830169677734)
+   gives:
    ```
-   This accessor returns a `namedtuple`, so that you can access its fields by name,  example:
+   IPyGPULoggerMemory(used_delta=128.0062427520752, peaked_delta=128.0133180618286, used_total=2282)
+   IPyGPULoggerMemory(used_delta=1024, peaked_delta=1024, used_total=3184)
+   IPyGPULoggerTime(time_delta=0.806537389755249)
+   ```
+   This accessor returns 3 `namedtuple`s, so that you can access the data fields by name. For example, continuing from above.
 
    ```python
-   print(il.data.gpu_mem_used)
+   print(cpu_mem.used_delta)
+   print(gpu_mem.used_total)
+   print(time_data.time_delta)
    ```
    or to unpack it:
    ```python
-   cpu_mem_used_delta, cpu_mem_peaked, cpu_mem_used, gpu_mem_used_delta, gpu_mem_peaked, gpu_mem_used, time_delta = il.data
+   cpu_mem_used_delta, cpu_mem_peaked_delta, cpu_mem_used_total = cpu_mem
+   gpu_mem_used_delta, gpu_mem_peaked_delta, gpu_mem_used_total = gpu_mem
    ```
-
-
 
 Please refer to the [demo notebook](https://github.com/stas00/ipygpulogger/blob/master/demo.ipynb) to see this API in action.
 

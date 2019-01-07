@@ -4,6 +4,7 @@
 
 - pre-load pytorch CUDA structures to account for the first 0.5GB of GPU RAM eaten up
 - switched to tracemalloc for general memory tracing
+- split .data accessor into 3 namedtypes
 
 ## 0.1.0 ()
 
