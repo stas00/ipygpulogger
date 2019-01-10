@@ -39,7 +39,7 @@ def gpu_mem_used_get_fast(gpu_handle):
 IPyGPULoggerMemory = namedtuple('IPyGPULoggerMemory', ['used_delta', 'peaked_delta', 'used_total'])
 IPyGPULoggerTime = namedtuple('IPyGPULoggerTime', ['time_delta'])
 
-class IPyGPULogger(object):
+class IPyGPULogger():
 
     def __init__(self, compact=False, gc_collect=True):
 
