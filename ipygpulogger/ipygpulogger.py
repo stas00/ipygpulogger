@@ -12,8 +12,6 @@ if torch.cuda.is_available():
 
 process = psutil.Process()
 
-IPyGPULoggerMemory = namedtuple('IPyGPULoggerMemory', ['consumed', 'reclaimed', 'available'])
-
 def preload_pytorch():
     if have_cuda: torch.ones((1, 1)).cuda()
 
