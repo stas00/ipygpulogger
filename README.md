@@ -6,6 +6,10 @@
 [![ipygpulogger license](https://img.shields.io/pypi/l/ipygpulogger.svg)](https://pypi.python.org/pypi/ipygpulogger)
 -->
 
+# ipygpulogger has been merged into ipyexperiments
+
+Please see: https://github.com/stas00/ipyexperiments
+
 # ipygpulogger
 
 GPU Logger for jupyter/ipython (currently logging memory and time).
